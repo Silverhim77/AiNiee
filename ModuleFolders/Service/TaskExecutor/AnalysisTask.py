@@ -1,8 +1,13 @@
 import concurrent.futures
+import itertools
 import re
+import time
 from datetime import datetime
 
 import rapidjson as json
+from rich import box
+from rich.markup import escape
+from rich.table import Table
 
 from ModuleFolders.Base.Base import Base
 from ModuleFolders.Config.Config import ConfigMixin
@@ -93,13 +98,17 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
             )
             self.info(f"开始执行第一阶段提取，共 {len(chunks)} 个分块。")
             first_stage_results = []
+            first_stage_discarded_chunks = 0
             executor_stage1 = concurrent.futures.ThreadPoolExecutor(max_workers=self.config.actual_thread_counts, thread_name_prefix="analysis_stage1")
             self._set_active_executor(executor_stage1)
             try:
                 futures_stage1 = [executor_stage1.submit(self._run_first_stage, chunk) for chunk in chunks]
                 for i, future in enumerate(concurrent.futures.as_completed(futures_stage1), 1):
                     if Base.work_status == Base.STATUS.STOPING: break
-                    if result := future.result(): first_stage_results.append(result)
+                    if result := future.result():
+                        if result.pop("_analysis_failed", False):
+                            first_stage_discarded_chunks += 1
+                        first_stage_results.append(result)
                     self._emit_progress_update(
                         "stage1",
                         self.tra("第一阶段"),
@@ -113,7 +122,13 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
                 self._clear_active_executor(executor_stage1)
 
             if Base.work_status == Base.STATUS.STOPING: return self._handle_stop()
-            self.info(f"第一阶段提取完成，成功收集 {len(first_stage_results)} 个分块结果。")
+            self.info(
+                "第一阶段提取完成，共处理 {0} 个分块，成功 {1} 个，丢弃 {2} 个。".format(
+                    len(chunks),
+                    max(0, len(first_stage_results) - first_stage_discarded_chunks),
+                    first_stage_discarded_chunks,
+                )
+            )
 
             # --- [第二阶段] ---
             reduction_batches = self._prepare_reduction_batches(first_stage_results) # 准备第二阶段的批次：将第一阶段的结果按 source 聚合，短词挂靠长词，形成待裁决的候选组。
@@ -127,6 +142,7 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
             )
             self.info(f"开始执行第二阶段合并，共 {len(reduction_batches)} 个批次。")
             second_stage_results = []
+            second_stage_discarded_batches = 0
             if reduction_batches:
                 executor_stage2 = concurrent.futures.ThreadPoolExecutor(max_workers=self.config.actual_thread_counts, thread_name_prefix="analysis_stage2")
                 self._set_active_executor(executor_stage2)
@@ -134,7 +150,10 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
                     futures_stage2 = [executor_stage2.submit(self._run_second_stage, batch) for batch in reduction_batches]
                     for i, future in enumerate(concurrent.futures.as_completed(futures_stage2), 1):
                         if Base.work_status == Base.STATUS.STOPING: break
-                        if result := future.result(): second_stage_results.append(result)
+                        if result := future.result():
+                            if result.pop("_analysis_failed", False):
+                                second_stage_discarded_batches += 1
+                            second_stage_results.append(result)
                         self._emit_progress_update(
                             "stage2",
                             self.tra("第二阶段"),
@@ -146,7 +165,13 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
                 finally:
                     executor_stage2.shutdown(wait=True, cancel_futures=Base.work_status == Base.STATUS.STOPING)
                     self._clear_active_executor(executor_stage2)
-                self.info(f"第二阶段合并完成，成功收集 {len(second_stage_results)} 个批次结果。")
+                self.info(
+                    "第二阶段合并完成，共处理 {0} 个批次，成功 {1} 个，丢弃 {2} 个。".format(
+                        len(reduction_batches),
+                        max(0, len(second_stage_results) - second_stage_discarded_batches),
+                        second_stage_discarded_batches,
+                    )
+                )
             else:
                 self.info("第二阶段没有可合并候选，已跳过 AI 裁决。")
 
@@ -163,6 +188,8 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
             )
             self.info("开始汇总最终分析结果并写回缓存 ...")
             final_data = self._finalize_results(first_stage_results, second_stage_results)
+            discarded_total = first_stage_discarded_chunks + second_stage_discarded_batches
+            analysis_status = "partial" if discarded_total else "success"
             self._emit_progress_update(
                 "finalize",
                 self.tra("结果整合"),
@@ -173,7 +200,7 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
             )
 
             analysis_data = {
-                "status": "success",
+                "status": analysis_status,
                 "last_run_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "characters": final_data.get("characters", []),
                 "terms": final_data.get("terms", []),
@@ -182,9 +209,16 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
                     "character_count": len(final_data.get("characters", [])),
                     "term_count": len(final_data.get("terms", [])),
                     "non_translate_count": len(final_data.get("non_translate", [])),
+                    "stage1_discarded_chunks": first_stage_discarded_chunks,
+                    "stage2_discarded_batches": second_stage_discarded_batches,
+                    "discarded_total": discarded_total,
                 },
             }
-            analysis_data["stats"]["total_hits"] = sum(analysis_data["stats"].values())
+            analysis_data["stats"]["total_hits"] = (
+                analysis_data["stats"]["character_count"]
+                + analysis_data["stats"]["term_count"]
+                + analysis_data["stats"]["non_translate_count"]
+            )
             
             self.cache_manager.set_analysis_data(analysis_data)
             self.cache_manager.require_save_to_file()
@@ -196,13 +230,25 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
                     analysis_data["stats"]["total_hits"],
                 )
             )
+            if discarded_total:
+                self.warning(
+                    "文本分析存在丢弃项：第一阶段丢弃 {0} 个分块，第二阶段丢弃 {1} 个批次。".format(
+                        first_stage_discarded_chunks,
+                        second_stage_discarded_batches,
+                    )
+                )
             Base.work_status = Base.STATUS.IDLE
+            done_message = self.tra("全文分析完成。")
+            if discarded_total:
+                done_message = self.tra(
+                    "全文分析完成，但第一阶段丢弃 {0} 个分块，第二阶段丢弃 {1} 个批次。"
+                ).format(first_stage_discarded_chunks, second_stage_discarded_batches)
             self.emit(
                 Base.EVENT.ANALYSIS_TASK_DONE,
                 {
-                    "status": "success",
+                    "status": analysis_status,
                     "analysis_data": analysis_data,
-                    "message": self.tra("全文分析完成。"),
+                    "message": done_message,
                 },
             )
 
@@ -244,11 +290,13 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
                 messages=messages,
                 required_fields=("characters", "terms", "non_translate")
             )
-            return result or {"characters": [], "terms": [], "non_translate": []}
+            if result is None:
+                return {"characters": [], "terms": [], "non_translate": [], "_analysis_failed": True}
+            return result
             
         except Exception as error:
             self.error(f"第一阶段提取失败: {error}")
-            return {"characters": [], "terms": [], "non_translate": []}
+            return {"characters": [], "terms": [], "non_translate": [], "_analysis_failed": True}
 
     def _get_recommended_translation_language_requirement(self) -> str:
         """构建 recommended_translation 的目标语言约束说明。"""
@@ -279,7 +327,9 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
                 "  \"terms\": [{\"source\": \"原文\", \"recommended_translation\": \"推荐译名\", \"category_path\": \"\", \"note\": \"\"}],\n"
                 "  \"non_translate\": [{\"marker\": \"代码或标记\", \"category\": \"\", \"note\": \"\"}]\n"
                 "}\n"
-                "```"
+                "```\n"
+                "注意：JSON 字符串内部需要引用原文或外文时，不要直接使用未转义的英文双引号 `\"`，"
+                "请改用中文/日文引号（如「」）或写成 `\\\"`，确保输出能被 JSON 解析。"
             )
             
             # 优化 Few-Shot：包含更丰富的混合场景，注意 {{}} 是转义 Python 的 f-string 占位符
@@ -351,11 +401,13 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
                 required_fields=("characters", "terms"),
                 custom_validator=stage_two_validator
             )
-            return result or {"characters": [], "terms": []}
+            if result is None:
+                return {"characters": [], "terms": [], "_analysis_failed": True}
+            return result
             
         except Exception as error:
             self.error(f"第二阶段合并失败: {error}")
-            return {"characters": [], "terms": []}
+            return {"characters": [], "terms": [], "_analysis_failed": True}
 
     def _prepare_reduction_batches(self, first_stage_results: list) -> list:
         """组装第二阶段所需的候选组批次：短词挂靠长词"""
@@ -430,7 +482,9 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
             "  \"characters\": [{\"source\": \"主source\", \"recommended_translation\": \"推荐译名\", \"gender\": \"分类属性\", \"note\": \"整合后的备注\"}],\n"
             "  \"terms\": [{\"source\": \"主source\", \"recommended_translation\": \"推荐译名\", \"category_path\": \"分类属性\", \"note\": \"整合后的备注\"}]\n"
             "}\n"
-            "```"
+            "```\n"
+            "注意：JSON 字符串内部需要引用原文或外文时，不要直接使用未转义的英文双引号 `\"`，"
+            "请改用中文/日文引号（如「」）或写成 `\\\"`，确保输出能被 JSON 解析。"
         )
         
         # 优化 Few-Shot：展示如何解决类型冲突和合并备注
@@ -623,7 +677,13 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
             try:
                 # 1. 发送请求
                 requester = LLMRequester()
-                skip, _, response_content, _, _ = requester.sent_request(
+                task_start_time = time.time()
+                response_think = ""
+                response_content = ""
+                prompt_tokens = 0
+                completion_tokens = 0
+
+                skip, response_think, response_content, prompt_tokens, completion_tokens = requester.sent_request(
                     [dict(msg) for msg in messages],
                     system_prompt,
                     self.config.get_active_platform_configuration(),
@@ -632,23 +692,59 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
                 if skip:
                     if Base.work_status == Base.STATUS.STOPING: return None
                     last_error = "请求被跳过或接口返回错误"
+                    self._print_analysis_model_log(
+                        stage_label,
+                        task_start_time,
+                        prompt_tokens,
+                        completion_tokens,
+                        response_think,
+                        response_content,
+                        last_error,
+                    )
                     continue
 
                 response_content = str(response_content or "").strip()
                 if not response_content:
                     last_error = "模型回复为空"
+                    self._print_analysis_model_log(
+                        stage_label,
+                        task_start_time,
+                        prompt_tokens,
+                        completion_tokens,
+                        response_think,
+                        response_content,
+                        last_error,
+                    )
                     continue
 
                 # 2. 从回复中提取 JSON (兼容多余文字)
                 parsed_json = self._extract_json_from_text(response_content)
                 if not parsed_json:
                     last_error = "未匹配到合法的 JSON 结构"
+                    self._print_analysis_model_log(
+                        stage_label,
+                        task_start_time,
+                        prompt_tokens,
+                        completion_tokens,
+                        response_think,
+                        response_content,
+                        last_error,
+                    )
                     continue
 
                 # 3. 基础结构校验 (确保必须字段存在且为列表)
                 is_valid, validation_error = self._validate_base_structure(parsed_json, required_fields)
                 if not is_valid:
                     last_error = validation_error
+                    self._print_analysis_model_log(
+                        stage_label,
+                        task_start_time,
+                        prompt_tokens,
+                        completion_tokens,
+                        response_think,
+                        response_content,
+                        last_error,
+                    )
                     continue
 
                 # 4. 阶段自定义业务校验 (如需要)
@@ -656,14 +752,42 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
                     is_valid, validation_error = custom_validator(parsed_json)
                     if not is_valid:
                         last_error = validation_error
+                        self._print_analysis_model_log(
+                            stage_label,
+                            task_start_time,
+                            prompt_tokens,
+                            completion_tokens,
+                            response_think,
+                            response_content,
+                            last_error,
+                        )
                         continue
 
                 # 5. 成功：归一化并清洗无用字段，安全返回
-                return {field: list(parsed_json.get(field) or []) for field in required_fields}
+                normalized_result = {field: list(parsed_json.get(field) or []) for field in required_fields}
+                self._print_analysis_model_log(
+                    stage_label,
+                    task_start_time,
+                    prompt_tokens,
+                    completion_tokens,
+                    response_think,
+                    response_content,
+                    "",
+                )
+                return normalized_result
 
             except Exception as error:
                 if Base.work_status == Base.STATUS.STOPING: return None
                 last_error = str(error)
+                self._print_analysis_model_log(
+                    stage_label,
+                    locals().get("task_start_time", time.time()),
+                    locals().get("prompt_tokens", 0),
+                    locals().get("completion_tokens", 0),
+                    locals().get("response_think", ""),
+                    locals().get("response_content", ""),
+                    last_error,
+                )
 
             # 记录重试日志
             if attempt < self.MAX_REQUEST_ATTEMPTS:
@@ -673,16 +797,163 @@ class AnalysisTask(ConfigMixin, LogMixin, Base):
 
         return None
 
+    def _print_analysis_model_log(
+        self,
+        stage_label: str,
+        start_time: float,
+        prompt_tokens: int,
+        completion_tokens: int,
+        response_think: str,
+        response_content: str,
+        error: str,
+    ) -> None:
+        """按翻译任务同款表格打印分析模型回复。"""
+        extra_log = []
+        if response_think:
+            extra_log.append("模型思考内容：\n" + str(response_think))
+        extra_log.append("模型回复内容：\n" + str(response_content or ""))
+
+        status_text = "JSON 解析成功" if not error else error
+        self.print(
+            self.generate_log_table(
+                *self.generate_log_rows(
+                    error,
+                    start_time,
+                    int(prompt_tokens or 0),
+                    int(completion_tokens or 0),
+                    [stage_label],
+                    [status_text],
+                    extra_log,
+                )
+            )
+        )
+
+    def generate_log_rows(
+        self,
+        error: str,
+        start_time: float,
+        prompt_tokens: int,
+        completion_tokens: int,
+        source: list[str],
+        translated: list[str],
+        extra_log: list[str],
+    ) -> tuple[list[str], bool]:
+        rows = []
+
+        if error != "":
+            rows.append(error)
+        else:
+            rows.append(
+                f"任务耗时 {(time.time() - start_time):.2f} 秒，"
+                + f"文本行数 {len(source)} 行，提示消耗 {prompt_tokens} Tokens，补全消耗 {completion_tokens} Tokens"
+            )
+
+        for item in extra_log:
+            rows.append(item.strip())
+
+        pair = ""
+        for source_text, translated_text in itertools.zip_longest(source, translated, fillvalue=""):
+            pair += "\n"
+            source_lines = source_text.split("\n") if source_text is not None else [""]
+            translated_lines = translated_text.split("\n") if translated_text is not None else [""]
+            for source_line, translated_line in itertools.zip_longest(source_lines, translated_lines, fillvalue=""):
+                pair += f"{source_line} [bright_blue]-->[/] {translated_line}\n"
+
+        rows.append(pair.strip())
+
+        return rows, error == ""
+
+    def generate_log_table(self, rows: list, success: bool) -> Table:
+        table = Table(
+            box=box.ASCII2,
+            expand=True,
+            title=" ",
+            caption=" ",
+            highlight=True,
+            show_lines=True,
+            show_header=False,
+            show_footer=False,
+            collapse_padding=True,
+            border_style="green" if success else "red",
+        )
+        table.add_column("", style="white", ratio=1, overflow="fold")
+
+        for row in rows:
+            if isinstance(row, str):
+                table.add_row(escape(row, re.compile(r"(\\*)(\[(?!bright_blue\]|\/\])[a-z#/@][^[]*?)").sub))
+            else:
+                table.add_row(*row)
+
+        return table
+
     def _extract_json_from_text(self, text: str) -> dict | None:
         """辅助方法：正则提取被包裹的 JSON"""
         json_match = re.search(r"\{.*\}", text, re.DOTALL)
         if json_match:
+            json_text = json_match.group(0)
             try:
-                parsed = json.loads(json_match.group(0))
+                parsed = json.loads(json_text)
                 if isinstance(parsed, dict): return parsed
             except json.JSONDecodeError:
                 pass
+
+            repaired_json_text = self._escape_unescaped_json_string_quotes(json_text)
+            if repaired_json_text != json_text:
+                try:
+                    parsed = json.loads(repaired_json_text)
+                    if isinstance(parsed, dict):
+                        self.warning("分析任务模型回复包含未转义双引号，已自动修复后解析。")
+                        return parsed
+                except json.JSONDecodeError:
+                    pass
         return None
+
+    @classmethod
+    def _escape_unescaped_json_string_quotes(cls, json_text: str) -> str:
+        """修复模型在 JSON 字符串值内部直接输出英文双引号的常见错误。"""
+        result = []
+        in_string = False
+        escaped = False
+
+        for index, char in enumerate(json_text):
+            if escaped:
+                result.append(char)
+                escaped = False
+                continue
+
+            if char == "\\":
+                result.append(char)
+                if in_string:
+                    escaped = True
+                continue
+
+            if char == '"':
+                if not in_string:
+                    in_string = True
+                    result.append(char)
+                    continue
+
+                if cls._looks_like_json_string_end(json_text, index + 1):
+                    in_string = False
+                    result.append(char)
+                else:
+                    result.append('\\"')
+                continue
+
+            result.append(char)
+
+        return "".join(result)
+
+    @staticmethod
+    def _looks_like_json_string_end(json_text: str, start_index: int) -> bool:
+        index = start_index
+        while index < len(json_text) and json_text[index].isspace():
+            index += 1
+
+        if index >= len(json_text):
+            return True
+
+        return json_text[index] in ":,}]"
 
     def _validate_base_structure(self, parsed: dict, required_fields: tuple[str, ...]) -> tuple[bool, str]:
         """辅助方法：校验基础结构"""
