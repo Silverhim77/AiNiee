@@ -142,6 +142,9 @@ class LLMClientFactory:
             if cls._instance is None:
                 cls._instance = super(LLMClientFactory, cls).__new__(cls)
                 cls._instance._clients = {}
+                # OAuth 客户端缓存键不含令牌：记录各键当前令牌，令牌轮换时
+                # 关闭旧客户端再重建，避免 httpx 连接池随每次刷新泄漏
+                cls._instance._oauth_tokens = {}
             return cls._instance
 
     def get_openai_client(self, config: Dict[str, Any]) -> OpenAI:
@@ -173,6 +176,22 @@ class LLMClientFactory:
 
     def get_anthropic_client(self, config: Dict[str, Any]) -> anthropic.Anthropic:
         """获取Anthropic客户端"""
+        # OAuth 订阅：用 auth_token 走 Bearer（不发 x-api-key）。缓存键不含令牌，
+        # 令牌轮换时关闭旧客户端再重建，避免每次刷新泄漏一个 httpx 连接池
+        if config.get("auth_method") == "oauth":
+            access = config.get("oauth_access_token") or config.get("api_key")
+            api_url = config.get("api_url") or ""
+            key = ("anthropic_oauth", api_url)
+            with self._lock:
+                cached = self._clients.get(key)
+                if cached is not None and self._oauth_tokens.get(key) == access:
+                    return cached
+                if cached is not None:
+                    self._safe_close_client(cached)  # 令牌已轮换，回收旧连接池
+                client = self._create_anthropic_oauth_client(config, access)
+                self._clients[key] = client
+                self._oauth_tokens[key] = access
+                return client
         api_key = config.get("api_key")
         api_url = config.get("api_url")
         key = ("anthropic", api_url, api_key)
@@ -215,6 +234,7 @@ class LLMClientFactory:
         with self._lock:
             clients = list(self._clients.values())
             self._clients.clear()
+            self._oauth_tokens.clear()
 
         for client in clients:
             self._safe_close_client(client)
@@ -243,6 +263,17 @@ class LLMClientFactory:
             api_key=config.get("api_key"),
             http_client=create_httpx_client()
         )
+
+    def _create_anthropic_oauth_client(self, config, access_token):
+        # 显式传 auth_token（非 None）后，anthropic SDK 走 Authorization: Bearer，
+        # 且不会再回退读取 ANTHROPIC_API_KEY 环境变量，self.api_key 保持 None，
+        # 故绝不会附带 x-api-key 头（已核对 SDK auth_headers 逻辑）。
+        # api_url 为空时不传 base_url，用 SDK 默认 https://api.anthropic.com
+        kwargs = dict(auth_token=access_token, http_client=create_httpx_client())
+        base_url = config.get("api_url")
+        if base_url:
+            kwargs["base_url"] = base_url
+        return anthropic.Anthropic(**kwargs)
 
     def _create_anthropic_bedrock(self, config):
         return anthropic.AnthropicBedrock(

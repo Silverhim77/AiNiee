@@ -6,6 +6,10 @@ class ModelConfigHelper:
 
     # Claude 模型输出限制映射
     CLAUDE_OUTPUT_LIMITS = {
+        # Claude 4.6+ adaptive thinking series
+        "claude-opus-4-7": 64000,
+        "claude-opus-4-6": 64000,
+        "claude-sonnet-4-6": 64000,
         # Claude 4.5 系列
         "claude-sonnet-4-5": 64000,
         "claude-haiku-4-5": 64000,
@@ -94,15 +98,26 @@ class ModelConfigHelper:
     @classmethod
     def get_claude_max_output_tokens(cls, model_name: str) -> int:
         """获取 Claude 模型的最大输出 token 限制"""
+        name = model_name or ""
+
+        # 新式 minor 版本（claude-<type>-<major>-<minor>）先走推断，
+        # 避免 claude-opus-4-7 被旧的 claude-opus-4 前缀误判成 32K。
+        major, minor, m_type = cls._parse_claude_new_style(name.lower())
+        if m_type:
+            if (major, minor) >= (4, 5):
+                return 64000
+            if major >= 4:
+                return 32000 if m_type == "opus" else 64000
+
         # 优先检查已知模型
         for known_model, limit in sorted(cls.CLAUDE_OUTPUT_LIMITS.items(),
                                          key=lambda x: len(x[0]),
                                          reverse=True):
-            if known_model in model_name:
+            if known_model in name:
                 return limit
 
         # 根据版本号和类型推断
-        version, model_type = cls._extract_claude_version_info(model_name)
+        version, model_type = cls._extract_claude_version_info(name)
 
         if version > 0 and model_type:
             # Claude 4.5+: 统一 64K
@@ -127,6 +142,58 @@ class ModelConfigHelper:
 
         # 使用默认值
         return cls.CLAUDE_DEFAULT_LIMIT
+
+    @classmethod
+    def claude_thinking_mode(cls, model_name: str) -> str:
+        """返回 Claude 模型的思考配置模式：'adaptive' 或 'budget'。
+
+        - adaptive：Opus 4.6/4.7、Sonnet 4.6、Mythos 及更新 —— 用
+          ``thinking:{type:"adaptive"}`` + 顶层 ``output_config.effort``；
+          旧式 ``budget_tokens`` 在 Opus 4.7 会返回 400。
+        - budget：旧模型（Opus/Sonnet 4.5 等）—— 仍用
+          ``thinking:{type:"enabled", budget_tokens}``。
+
+        判定保守：未知/无法识别版本时回退 budget（兼容性最好）。
+        不复用 _extract_claude_version_info（其正则对 "claude-3-7-sonnet"
+        这类「版本在中间、类型在后」的旧命名会误判为高版本）。
+        """
+        name = (model_name or "").lower()
+        if "mythos" in name:
+            return "adaptive"
+        major, minor, m_type = cls._parse_claude_new_style(name)
+        if m_type in ("opus", "sonnet") and (major, minor) >= (4, 6):
+            return "adaptive"
+        return "budget"
+
+    @staticmethod
+    def _parse_claude_new_style(name: str) -> tuple[int, int, str]:
+        """只解析新式命名 ``claude-<type>-<major>-<minor>``（4.x 起，类型在前）。
+
+        旧式 3.x（``claude-3-7-sonnet``）/ 4.0 日期命名
+        （``claude-opus-4-20250514``）/ 无法识别 → (0,0,"")，
+        天然回退 budget。允许 minor 后再带日期后缀，如
+        ``claude-opus-4-7-20991231``。
+        """
+        m = re.search(r"claude-(opus|sonnet|haiku)-(\d+)-(\d{1,2})(?:-|$)", name)
+        if m:
+            return int(m.group(2)), int(m.group(3)), m.group(1)
+        return 0, 0, ""
+
+    @classmethod
+    def claude_effort(cls, think_depth: str, model_name: str) -> str:
+        """把 AiNiee 的 think_depth 映射为 Anthropic 的 effort 档位。
+
+        合法 effort：low / medium / high / xhigh(仅 Opus 4.7+) / max。
+        """
+        depth = (think_depth or "high").lower()
+        if depth in ("low", "medium", "high", "max"):
+            return depth
+        if depth == "xhigh":
+            major, minor, m_type = cls._parse_claude_new_style((model_name or "").lower())
+            if m_type == "opus" and (major, minor) >= (4, 7):
+                return "xhigh"
+            return "max"  # 其它 adaptive 模型不支持 xhigh，用 max 近似
+        return "high"
 
     @classmethod
     def get_google_max_output_tokens(cls, model_name: str) -> int:

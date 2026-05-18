@@ -276,6 +276,11 @@ class PlatformPage(QFrame, ConfigMixin, ToastMixin, Base):
         self._update_visibility()
         self.container.addStretch(1)
 
+    def showEvent(self, event):
+        # 切回本页时按共享 config 重刷激活标识：在「订阅管理」改了激活接口能同步反映
+        super().showEvent(event)
+        self._refresh_active_interface_ui()
+
     def _create_empty_hint_widget(self):
         self.empty_hint_widget = QWidget()
         self.empty_hint_widget.setStyleSheet("QWidget { background: transparent; }")
@@ -321,6 +326,9 @@ class PlatformPage(QFrame, ConfigMixin, ToastMixin, Base):
         grouped_platforms = {"local": [], "online": [], "custom": []}
 
         for tag, api_data in platforms.items():
+            # 订阅接口（OAuth）统一在「订阅管理」页管理，接口管理不展示
+            if api_data.get("auth_method") == "oauth":
+                continue
             group = api_data.get("group", "custom")
             if group not in grouped_platforms:
                 group = "custom"
@@ -382,6 +390,9 @@ class PlatformPage(QFrame, ConfigMixin, ToastMixin, Base):
         platforms = config.get("platforms", {})
         items = []
         for tag, api_data in platforms.items():
+            # 订阅接口（OAuth）不参与接口管理的功能绑定，统一在「订阅管理」页管理
+            if api_data.get("auth_method") == "oauth":
+                continue
             items.append((tag, api_data.get("name", tag)))
         items.sort(key=lambda item: item[1])
         return items
@@ -423,11 +434,17 @@ class PlatformPage(QFrame, ConfigMixin, ToastMixin, Base):
         if Base.work_status == Base.STATUS.IDLE:
             Base.work_status = Base.STATUS.API_TEST
             data = copy.deepcopy(platform)
+            self._api_test_pending = True
             self.emit(Base.EVENT.API_TEST_START, data)
         else:
             self.warning_toast("", self.tra("接口测试正在执行中，请稍后再试"))
 
     def api_test_done(self, event: int, data: dict):
+        # API_TEST_DONE 是全局事件，接口管理页与订阅管理页都订阅它。
+        # 仅处理本页发起的那次测试，否则会对同一次测试重复弹提示、重复复位状态。
+        if not getattr(self, "_api_test_pending", False):
+            return
+        self._api_test_pending = False
         Base.work_status = Base.STATUS.IDLE
         if len(data.get("failure", [])) > 0:
             info_cont = (
@@ -593,6 +610,9 @@ class PlatformPage(QFrame, ConfigMixin, ToastMixin, Base):
         self._update_visibility()
 
     def add_api_card(self, tag: str, api_data: dict):
+        # 订阅接口（OAuth）统一在「订阅管理」页管理，接口管理不创建其卡片
+        if api_data.get("auth_method") == "oauth":
+            return
         button = APIItemCard(tag, api_data, self)
 
         button.testClicked.connect(self.api_test)

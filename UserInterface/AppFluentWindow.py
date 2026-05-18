@@ -27,6 +27,7 @@ from UserInterface.BaseNavigationItem import BaseNavigationItem
 from UserInterface.EditView.EditViewPage import EditViewPage
 from UserInterface.Native.MacOSUI import about_message, app_menu_title, command_shortcut
 from UserInterface.Platform.PlatformPage import PlatformPage
+from UserInterface.Platform.SubscriptionPage import SubscriptionPage
 from UserInterface.PromptSettings.PolishingSettings.PolishingSystemPromptPage import PolishingSystemPromptPage
 from UserInterface.Settings.AppSettingsPage import AppSettingsPage
 from UserInterface.Settings.OutputSettingsPage import OutputSettingsPage
@@ -274,6 +275,9 @@ class AppFluentWindow(FluentWindow, ConfigMixin, LogMixin, ToastMixin, Base):
     def add_project_pages(self, cache_manager, file_reader) -> None:
         self.platform_page = PlatformPage("platform_page", self)
         self.addSubInterface(self.platform_page, FluentIcon.IOT, self.tra("接口管理"), NavigationItemPosition.SCROLL)
+
+        self.subscription_page = SubscriptionPage("subscription_page", self)
+        self.addSubInterface(self.subscription_page, FluentIcon.PEOPLE, self.tra("订阅管理"), NavigationItemPosition.SCROLL)
 
         self.edit_view_page = EditViewPage("edit_view_page", self, cache_manager, file_reader)
         self.addSubInterface(self.edit_view_page, FluentIcon.PLAY, self.tra("开始翻译"), NavigationItemPosition.SCROLL)

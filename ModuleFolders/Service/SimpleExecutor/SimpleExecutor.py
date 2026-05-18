@@ -88,11 +88,27 @@ class SimpleExecutor(ConfigMixin, LogMixin, Base):
         failure = []
         success = []
 
-        # 解析并分割密钥字符串
-        api_keys = re.sub(r"\s+","", api_key).split(",")
+        # 解析密钥：OAuth 订阅取有效 access_token；否则按逗号分割多 key
+        auth_method = data.get("auth_method")
+        if auth_method == "oauth":
+            from ModuleFolders.Infrastructure.Auth.CredentialManager import (
+                CredentialManager,
+                SubscriptionAuthError,
+            )
+            try:
+                _token = CredentialManager().get_valid_access_token(
+                    data.get("oauth_provider", "anthropic")
+                )
+            except SubscriptionAuthError as e:
+                self.error(f"订阅账号不可用：{e}")
+                self.emit(Base.EVENT.API_TEST_DONE, {"failure": ["oauth"], "success": []})
+                return
+            api_keys = [("oauth", _token)]
+        else:
+            api_keys = [(key, key) for key in re.sub(r"\s+","", api_key).split(",")]
 
         # 轮询所有密钥进行测试
-        for api_key in api_keys:
+        for api_key_label, api_key in api_keys:
 
             # 构建 Prompt
             messages = [
@@ -108,7 +124,10 @@ class SimpleExecutor(ConfigMixin, LogMixin, Base):
             self.info("正在进行接口测试 ...")
             self.info(f"接口名称 - {platform_name}")
             self.info(f"接口地址 - {api_url}")
-            self.info(f"接口密钥 - {'*'*(len(api_key)-8)}{api_key[-8:]}") # 隐藏敏感信息
+            if auth_method == "oauth":
+                self.info("接口密钥 - OAuth 订阅令牌（已隐藏）")
+            else:
+                self.info(f"接口密钥 - {'*'*(len(api_key)-8)}{api_key[-8:]}") # 隐藏敏感信息
             self.info(f"模型名称 - {model_name}")
             self.info(f"tls_switch - {data.get('tls_switch', False)}")
             if extra_body:
@@ -134,6 +153,12 @@ class SimpleExecutor(ConfigMixin, LogMixin, Base):
                 "temperature": data.get("temperature"),
             }
 
+            # OAuth 订阅：补充令牌字段，使请求器走 Bearer 并前置身份前导
+            if auth_method == "oauth":
+                platform_config["auth_method"] = "oauth"
+                platform_config["oauth_provider"] = data.get("oauth_provider", "anthropic")
+                platform_config["oauth_access_token"] = api_key
+
             #尝试请求
             requester = LLMRequester()
             skip, response_think, response_content, prompt_tokens, completion_tokens = requester.sent_request(
@@ -147,13 +172,13 @@ class SimpleExecutor(ConfigMixin, LogMixin, Base):
                 self.info("接口测试成功 ...")
                 self.info(f"接口返回信息 - {response_content}")
                 # 储存结果
-                success.append(api_key)
+                success.append(api_key_label)
 
             # 测试失败
             else:
                 self.error(f"接口测试失败 ... ")
                 # 储存结果
-                failure.append(api_key)
+                failure.append(api_key_label)
 
             self.print("")
 
@@ -598,5 +623,4 @@ class SimpleExecutor(ConfigMixin, LogMixin, Base):
 
         Base.work_status = Base.STATUS.IDLE 
         self.info(f" 🐳 表格润色任务结束")     
-
 

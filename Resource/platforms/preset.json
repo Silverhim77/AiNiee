@@ -162,6 +162,34 @@
                 "temperature"
             ]
         },
+        "claude_subscription": {
+            "tag": "claude_subscription",
+            "group": "subscription",
+            "name": "Claude 订阅",
+            "api_url": "",
+            "api_key": "",
+            "api_format": "Anthropic",
+            "auth_method": "oauth",
+            "oauth_provider": "anthropic",
+            "icon": "anthropic",
+            "rpm_limit": 60,
+            "model": "claude-sonnet-4-6",
+            "think_switch": false,
+            "think_depth": "high",
+            "model_datas": [
+                "claude-sonnet-4-6",
+                "claude-sonnet-4-5",
+                "claude-opus-4-7",
+                "claude-opus-4-6"
+            ],
+            "key_in_settings": [
+                "subscription_status",
+                "model",
+                "rpm_limit",
+                "think_switch",
+                "think_depth"
+            ]
+        },
         "amazonbedrock": {
             "tag": "amazonbedrock",
             "group": "online",

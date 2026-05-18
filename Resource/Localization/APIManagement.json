@@ -631,6 +631,288 @@
       "繁中": "已激活介面",
       "English": "Active API",
       "日本語": "有効なAPI"
+    },
+    "订阅接口": {
+      "简中": "订阅接口",
+      "繁中": "訂閱介面",
+      "English": "Subscription",
+      "日本語": "サブスクリプション"
+    },
+    "复用本机已登录的订阅账号（无需 API Key）": {
+      "简中": "复用本机已登录的订阅账号（无需 API Key）",
+      "繁中": "複用本機已登入的訂閱帳號（無需 API Key）",
+      "English": "Reuse the locally signed-in subscription account (no API key)",
+      "日本語": "ローカルでログイン済みのサブスクアカウントを再利用（APIキー不要）"
+    },
+    "Claude 订阅": {
+      "简中": "Claude 订阅",
+      "繁中": "Claude 訂閱",
+      "English": "Claude Subscription",
+      "日本語": "Claude サブスクリプション"
+    },
+    "订阅登录状态": {
+      "简中": "订阅登录状态",
+      "繁中": "訂閱登入狀態",
+      "English": "Subscription login status",
+      "日本語": "サブスクリプションのログイン状態"
+    },
+    "复用本机已登录的订阅账号，无需 API Key": {
+      "简中": "复用本机已登录的订阅账号，无需 API Key",
+      "繁中": "複用本機已登入的訂閱帳號，無需 API Key",
+      "English": "Reuse the locally signed-in subscription account; no API key needed",
+      "日本語": "ローカルでログイン済みのサブスクアカウントを再利用します。APIキーは不要です"
+    },
+    "已登录": {
+      "简中": "已登录",
+      "繁中": "已登入",
+      "English": "Signed in",
+      "日本語": "ログイン済み"
+    },
+    "到期时间": {
+      "简中": "到期时间",
+      "繁中": "到期時間",
+      "English": "Expires",
+      "日本語": "有効期限"
+    },
+    "（即将过期，使用时将自动刷新）": {
+      "简中": "（即将过期，使用时将自动刷新）",
+      "繁中": "（即將到期，使用時將自動重新整理）",
+      "English": "(Expiring soon; will auto-refresh on use)",
+      "日本語": "（まもなく期限切れ。使用時に自動更新されます）"
+    },
+    "未检测到登录": {
+      "简中": "未检测到登录",
+      "繁中": "未偵測到登入",
+      "English": "Not signed in",
+      "日本語": "ログインが検出されません"
+    },
+    "请先在终端运行官方 claude 登录订阅账号": {
+      "简中": "请先在终端运行官方 claude 登录订阅账号",
+      "繁中": "請先在終端機執行官方 claude 登入訂閱帳號",
+      "English": "Run the official `claude` CLI in a terminal to sign in to your subscription first",
+      "日本語": "先にターミナルで公式 `claude` を実行し、サブスクアカウントにログインしてください"
+    },
+    "无法读取订阅登录状态": {
+      "简中": "无法读取订阅登录状态",
+      "繁中": "無法讀取訂閱登入狀態",
+      "English": "Unable to read subscription login status",
+      "日本語": "サブスクリプションのログイン状態を読み取れません"
+    },
+    "重新检测": {
+      "简中": "重新检测",
+      "繁中": "重新偵測",
+      "English": "Recheck",
+      "日本語": "再確認"
+    },
+    "订阅管理": {
+      "简中": "订阅管理",
+      "繁中": "訂閱管理",
+      "English": "Subscription",
+      "日本語": "サブスクリプション管理"
+    },
+    "Claude 订阅接口": {
+      "简中": "Claude 订阅接口",
+      "繁中": "Claude 訂閱介面",
+      "English": "Claude Subscription API",
+      "日本語": "Claude サブスクリプション API"
+    },
+    "一键创建并启用 Claude 订阅接口": {
+      "简中": "一键创建并启用 Claude 订阅接口",
+      "繁中": "一鍵建立並啟用 Claude 訂閱介面",
+      "English": "Create & enable Claude subscription in one click",
+      "日本語": "ワンクリックで Claude サブスクを作成・有効化"
+    },
+    "尚未创建订阅接口，点击上方按钮一键启用": {
+      "简中": "尚未创建订阅接口，点击上方按钮一键启用",
+      "繁中": "尚未建立訂閱介面，點擊上方按鈕一鍵啟用",
+      "English": "No subscription API yet — click the button above to enable",
+      "日本語": "サブスク API は未作成です。上のボタンで有効化してください"
+    },
+    "说明": {
+      "简中": "说明",
+      "繁中": "說明",
+      "English": "Notes",
+      "日本語": "説明"
+    },
+    "默认模型 claude-sonnet-4-6（Sonnet 订阅配额充裕，适合批量翻译）。订阅按 5 小时 / 7 天滚动窗口用量限额，触顶会暂时返回 429，稍后自动恢复。复用本机 claude 登录凭据驱动第三方应用可能违反 Anthropic 服务条款，限流/封号风险由使用者自担。": {
+      "简中": "默认模型 claude-sonnet-4-6（Sonnet 订阅配额充裕，适合批量翻译）。订阅按 5 小时 / 7 天滚动窗口用量限额，触顶会暂时返回 429，稍后自动恢复。复用本机 claude 登录凭据驱动第三方应用可能违反 Anthropic 服务条款，限流/封号风险由使用者自担。",
+      "繁中": "預設模型 claude-sonnet-4-6（Sonnet 訂閱配額充裕，適合批次翻譯）。訂閱按 5 小時 / 7 天滾動視窗用量限額，觸頂會暫時回傳 429，稍後自動恢復。複用本機 claude 登入憑證驅動第三方應用可能違反 Anthropic 服務條款，限流/封號風險由使用者自負。",
+      "English": "Default model claude-sonnet-4-6 (Sonnet has ample subscription quota, good for batch translation). Subscriptions are limited by rolling 5-hour / 7-day usage windows; hitting the cap returns 429 temporarily and recovers later. Reusing the local `claude` login credentials to drive a third-party app may violate Anthropic's Terms of Service; rate-limit/ban risk is borne by the user.",
+      "日本語": "デフォルトモデルは claude-sonnet-4-6（Sonnet はサブスク枠が潤沢でバッチ翻訳向き）。サブスクは 5 時間 / 7 日のローリング枠で制限され、上限に達すると一時的に 429 を返し後で自動回復します。ローカルの claude ログイン認証情報を第三者アプリで再利用することは Anthropic の利用規約に違反する可能性があり、レート制限/凍結のリスクは利用者が負います。"
+    },
+    "模型": {
+      "简中": "模型",
+      "繁中": "模型",
+      "English": "Model",
+      "日本語": "モデル"
+    },
+    "创建并启用 Claude 订阅接口": {
+      "简中": "创建并启用 Claude 订阅接口",
+      "繁中": "建立並啟用 Claude 訂閱介面",
+      "English": "Create & enable Claude subscription",
+      "日本語": "Claude サブスクを作成・有効化"
+    },
+    "应用所选模型并启用": {
+      "简中": "应用所选模型并启用",
+      "繁中": "套用所選模型並啟用",
+      "English": "Apply selected model & enable",
+      "日本語": "選択モデルを適用して有効化"
+    },
+    "已更新模型并启用": {
+      "简中": "已更新模型并启用",
+      "繁中": "已更新模型並啟用",
+      "English": "Model updated & enabled",
+      "日本語": "モデルを更新して有効化しました"
+    },
+    "尚未创建订阅接口，选择模型后点击上方按钮一键启用": {
+      "简中": "尚未创建订阅接口，选择模型后点击上方按钮一键启用",
+      "繁中": "尚未建立訂閱介面，選擇模型後點擊上方按鈕一鍵啟用",
+      "English": "No subscription API yet — pick a model and click the button above",
+      "日本語": "サブスク API は未作成です。モデルを選んで上のボタンで有効化してください"
+    },
+    "当前激活接口": {
+      "简中": "当前激活接口",
+      "繁中": "目前啟用介面",
+      "English": "Active API",
+      "日本語": "現在有効なAPI"
+    },
+    "未激活任何接口": {
+      "简中": "未激活任何接口",
+      "繁中": "未啟用任何介面",
+      "English": "No API activated",
+      "日本語": "有効なAPIがありません"
+    },
+    "订阅": {
+      "简中": "订阅",
+      "繁中": "訂閱",
+      "English": "Subscription",
+      "日本語": "サブスク"
+    },
+    "API": {
+      "简中": "API",
+      "繁中": "API",
+      "English": "API",
+      "日本語": "API"
+    },
+    "在「接口管理」或「订阅管理」激活其一即可：激活订阅接口则后续翻译走订阅模型，从接口管理激活 API 接口则走 API 模型（二者互斥，以最后激活的为准）。默认模型 claude-sonnet-4-6（Sonnet 订阅配额充裕，适合批量翻译）。订阅按 5 小时 / 7 天滚动窗口用量限额，触顶会暂时返回 429，稍后自动恢复。复用本机 claude 登录凭据驱动第三方应用可能违反 Anthropic 服务条款，限流/封号风险由使用者自担。": {
+      "简中": "在「接口管理」或「订阅管理」激活其一即可：激活订阅接口则后续翻译走订阅模型，从接口管理激活 API 接口则走 API 模型（二者互斥，以最后激活的为准）。默认模型 claude-sonnet-4-6（Sonnet 订阅配额充裕，适合批量翻译）。订阅按 5 小时 / 7 天滚动窗口用量限额，触顶会暂时返回 429，稍后自动恢复。复用本机 claude 登录凭据驱动第三方应用可能违反 Anthropic 服务条款，限流/封号风险由使用者自担。",
+      "繁中": "在「介面管理」或「訂閱管理」啟用其一即可：啟用訂閱介面則後續翻譯走訂閱模型，從介面管理啟用 API 介面則走 API 模型（兩者互斥，以最後啟用者為準）。預設模型 claude-sonnet-4-6（Sonnet 訂閱配額充裕，適合批次翻譯）。訂閱按 5 小時 / 7 天滾動視窗用量限額，觸頂會暫時回傳 429，稍後自動恢復。複用本機 claude 登入憑證驅動第三方應用可能違反 Anthropic 服務條款，限流/封號風險由使用者自負。",
+      "English": "Activate one in either Interface Management or Subscription: activating a subscription API routes translation through the subscription model; activating an API-key interface routes through the API model (mutually exclusive — the last activated wins). Default model claude-sonnet-4-6 (ample Sonnet subscription quota, good for batch translation). Subscriptions are limited by rolling 5-hour / 7-day usage windows; hitting the cap returns 429 temporarily and recovers later. Reusing the local `claude` login credentials to drive a third-party app may violate Anthropic's Terms of Service; rate-limit/ban risk is borne by the user.",
+      "日本語": "「インターフェース管理」または「サブスクリプション管理」でいずれか一つを有効化すれば動作します：サブスク API を有効化すると以降の翻訳はサブスクモデル、インターフェース管理で API キー接続を有効化すると API モデルを使用します（相互排他、最後に有効化したものが優先）。デフォルトモデルは claude-sonnet-4-6（Sonnet はサブスク枠が潤沢でバッチ翻訳向き）。サブスクは 5 時間 / 7 日のローリング枠で制限され、上限に達すると一時的に 429 を返し後で自動回復します。ローカルの claude ログイン認証情報を第三者アプリで再利用することは Anthropic の利用規約に違反する可能性があり、レート制限/凍結のリスクは利用者が負います。"
+    },
+    "使用 AiNiee 内置 OAuth 登录（无需 API Key）": {
+      "简中": "使用 AiNiee 内置 OAuth 登录（无需 API Key）",
+      "繁中": "使用 AiNiee 內建 OAuth 登入（無需 API Key）",
+      "English": "Use AiNiee built-in OAuth login (no API key)",
+      "日本語": "AiNiee 内蔵 OAuth ログインを使用（APIキー不要）"
+    },
+    "使用 AiNiee 内置 OAuth 登录，无需 API Key": {
+      "简中": "使用 AiNiee 内置 OAuth 登录，无需 API Key",
+      "繁中": "使用 AiNiee 內建 OAuth 登入，無需 API Key",
+      "English": "Use AiNiee built-in OAuth login; no API key needed",
+      "日本語": "AiNiee 内蔵 OAuth ログインを使用します。APIキーは不要です"
+    },
+    "请在订阅管理中登录 Claude 订阅账号": {
+      "简中": "请在订阅管理中登录 Claude 订阅账号",
+      "繁中": "請在訂閱管理中登入 Claude 訂閱帳號",
+      "English": "Sign in to your Claude subscription in Subscription Management",
+      "日本語": "サブスクリプション管理で Claude サブスクアカウントにログインしてください"
+    },
+    "登录 Claude 订阅": {
+      "简中": "登录 Claude 订阅",
+      "繁中": "登入 Claude 訂閱",
+      "English": "Sign in to Claude subscription",
+      "日本語": "Claude サブスクにログイン"
+    },
+    "退出登录": {
+      "简中": "退出登录",
+      "繁中": "登出",
+      "English": "Sign out",
+      "日本語": "ログアウト"
+    },
+    "打开登录页面": {
+      "简中": "打开登录页面",
+      "繁中": "開啟登入頁面",
+      "English": "Open sign-in page",
+      "日本語": "ログインページを開く"
+    },
+    "完成登录": {
+      "简中": "完成登录",
+      "繁中": "完成登入",
+      "English": "Complete sign-in",
+      "日本語": "ログインを完了"
+    },
+    "授权码": {
+      "简中": "授权码",
+      "繁中": "授權碼",
+      "English": "Authorization code",
+      "日本語": "認可コード"
+    },
+    "粘贴浏览器页面显示的 code#state 或完整回调地址": {
+      "简中": "粘贴浏览器页面显示的 code#state 或完整回调地址",
+      "繁中": "貼上瀏覽器頁面顯示的 code#state 或完整回呼位址",
+      "English": "Paste the code#state shown in the browser or the full callback URL",
+      "日本語": "ブラウザに表示された code#state または完全なコールバックURLを貼り付けてください"
+    },
+    "将打开浏览器完成 Claude OAuth 授权，授权后把页面显示的 code#state 粘贴到下方。": {
+      "简中": "将打开浏览器完成 Claude OAuth 授权，授权后把页面显示的 code#state 粘贴到下方。",
+      "繁中": "將開啟瀏覽器完成 Claude OAuth 授權，授權後把頁面顯示的 code#state 貼到下方。",
+      "English": "A browser will open for Claude OAuth authorization. After authorizing, paste the displayed code#state below.",
+      "日本語": "Claude OAuth 認可のためブラウザを開きます。認可後、表示された code#state を下に貼り付けてください。"
+    },
+    "登录成功": {
+      "简中": "登录成功",
+      "繁中": "登入成功",
+      "English": "Sign-in successful",
+      "日本語": "ログインしました"
+    },
+    "登录失败": {
+      "简中": "登录失败",
+      "繁中": "登入失敗",
+      "English": "Sign-in failed",
+      "日本語": "ログインに失敗しました"
+    },
+    "已退出登录": {
+      "简中": "已退出登录",
+      "繁中": "已登出",
+      "English": "Signed out",
+      "日本語": "ログアウトしました"
+    },
+    "退出登录失败": {
+      "简中": "退出登录失败",
+      "繁中": "登出失敗",
+      "English": "Sign-out failed",
+      "日本語": "ログアウトに失敗しました"
+    },
+    "创建订阅接口": {
+      "简中": "创建订阅接口",
+      "繁中": "建立訂閱介面",
+      "English": "Create subscription API",
+      "日本語": "サブスク API を作成"
+    },
+    "未找到 Claude 订阅预设": {
+      "简中": "未找到 Claude 订阅预设",
+      "繁中": "未找到 Claude 訂閱預設",
+      "English": "Claude subscription preset not found",
+      "日本語": "Claude サブスクのプリセットが見つかりません"
+    },
+    "订阅接口已创建并启用": {
+      "简中": "订阅接口已创建并启用",
+      "繁中": "訂閱介面已建立並啟用",
+      "English": "Subscription API created and enabled",
+      "日本語": "サブスク API を作成して有効化しました"
+    },
+    "在「接口管理」或「订阅管理」激活其一即可：激活订阅接口则后续翻译走订阅模型，从接口管理激活 API 接口则走 API 模型（二者互斥，以最后激活的为准）。订阅按 5 小时 / 7 天滚动窗口用量限额，触顶会暂时返回 429，稍后自动恢复。使用 AiNiee 内置 OAuth 订阅凭据驱动第三方应用可能违反 Anthropic 服务条款，限流/封号风险由使用者自担。": {
+      "简中": "在「接口管理」或「订阅管理」激活其一即可：激活订阅接口则后续翻译走订阅模型，从接口管理激活 API 接口则走 API 模型（二者互斥，以最后激活的为准）。订阅按 5 小时 / 7 天滚动窗口用量限额，触顶会暂时返回 429，稍后自动恢复。使用 AiNiee 内置 OAuth 订阅凭据驱动第三方应用可能违反 Anthropic 服务条款，限流/封号风险由使用者自担。",
+      "繁中": "在「介面管理」或「訂閱管理」啟用其一即可：啟用訂閱介面則後續翻譯走訂閱模型，從介面管理啟用 API 介面則走 API 模型（兩者互斥，以最後啟用者為準）。訂閱按 5 小時 / 7 天滾動視窗用量限額，觸頂會暫時回傳 429，稍後自動恢復。使用 AiNiee 內建 OAuth 訂閱憑據驅動第三方應用可能違反 Anthropic 服務條款，限流/封號風險由使用者自負。",
+      "English": "Activate one in either Interface Management or Subscription: activating a subscription API routes translation through the subscription model; activating an API-key interface routes through the API model (mutually exclusive; the last activated wins). Subscriptions are limited by rolling 5-hour / 7-day usage windows; hitting the cap returns 429 temporarily and recovers later. Using AiNiee built-in OAuth subscription credentials to drive a third-party app may violate Anthropic's Terms of Service; rate-limit/ban risk is borne by the user.",
+      "日本語": "「インターフェース管理」または「サブスクリプション管理」でいずれか一つを有効化すれば動作します：サブスク API を有効化すると以降の翻訳はサブスクモデル、インターフェース管理で API キー接続を有効化すると API モデルを使用します（相互排他、最後に有効化したものが優先）。サブスクは 5 時間 / 7 日のローリング枠で制限され、上限に達すると一時的に 429 を返し後で自動回復します。AiNiee 内蔵 OAuth サブスク認証情報を第三者アプリで使用することは Anthropic の利用規約に違反する可能性があり、レート制限/凍結のリスクは利用者が負います。"
+    },
+    "在「接口管理」或「订阅管理」激活其一即可：激活订阅接口则后续翻译走订阅模型，从接口管理激活 API 接口则走 API 模型（二者互斥，以最后激活的为准）。默认模型 claude-sonnet-4-6（Sonnet 订阅配额充裕，适合批量翻译）。订阅按 5 小时 / 7 天滚动窗口用量限额，触顶会暂时返回 429，稍后自动恢复。使用 AiNiee 内置 OAuth 订阅凭据驱动第三方应用可能违反 Anthropic 服务条款，限流/封号风险由使用者自担。": {
+      "简中": "在「接口管理」或「订阅管理」激活其一即可：激活订阅接口则后续翻译走订阅模型，从接口管理激活 API 接口则走 API 模型（二者互斥，以最后激活的为准）。默认模型 claude-sonnet-4-6（Sonnet 订阅配额充裕，适合批量翻译）。订阅按 5 小时 / 7 天滚动窗口用量限额，触顶会暂时返回 429，稍后自动恢复。使用 AiNiee 内置 OAuth 订阅凭据驱动第三方应用可能违反 Anthropic 服务条款，限流/封号风险由使用者自担。",
+      "繁中": "在「介面管理」或「訂閱管理」啟用其一即可：啟用訂閱介面則後續翻譯走訂閱模型，從介面管理啟用 API 介面則走 API 模型（兩者互斥，以最後啟用者為準）。預設模型 claude-sonnet-4-6（Sonnet 訂閱配額充裕，適合批次翻譯）。訂閱按 5 小時 / 7 天滾動視窗用量限額，觸頂會暫時回傳 429，稍後自動恢復。使用 AiNiee 內建 OAuth 訂閱憑據驅動第三方應用可能違反 Anthropic 服務條款，限流/封號風險由使用者自負。",
+      "English": "Activate one in either Interface Management or Subscription: activating a subscription API routes translation through the subscription model; activating an API-key interface routes through the API model (mutually exclusive; the last activated wins). Default model claude-sonnet-4-6 (ample Sonnet subscription quota, good for batch translation). Subscriptions are limited by rolling 5-hour / 7-day usage windows; hitting the cap returns 429 temporarily and recovers later. Using AiNiee built-in OAuth subscription credentials to drive a third-party app may violate Anthropic's Terms of Service; rate-limit/ban risk is borne by the user.",
+      "日本語": "「インターフェース管理」または「サブスクリプション管理」でいずれか一つを有効化すれば動作します：サブスク API を有効化すると以降の翻訳はサブスクモデル、インターフェース管理で API キー接続を有効化すると API モデルを使用します（相互排他、最後に有効化したものが優先）。デフォルトモデルは claude-sonnet-4-6（Sonnet はサブスク枠が潤沢でバッチ翻訳向き）。サブスクは 5 時間 / 7 日のローリング枠で制限され、上限に達すると一時的に 429 を返し後で自動回復します。AiNiee 内蔵 OAuth サブスク認証情報を第三者アプリで使用することは Anthropic の利用規約に違反する可能性があり、レート制限/凍結のリスクは利用者が負います。"
     }
   }
 }

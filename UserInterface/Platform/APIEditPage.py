@@ -62,6 +62,10 @@ class APIEditPage(MessageBoxBase, ConfigMixin, LogMixin, ToastMixin, Base):
         if "api_key" in config.get("platforms").get(self.key).get("key_in_settings"):
             self.add_widget_key(self.vbox, config)
 
+        # 订阅登录状态（OAuth 订阅接口，只读，不在此登录）
+        if "subscription_status" in config.get("platforms").get(self.key).get("key_in_settings"):
+            self.add_widget_subscription_status(self.vbox, config)
+
         # 接口区域 (AWS)
         if "region" in config.get("platforms").get(self.key).get("key_in_settings"):
             self.add_widget_region(self.vbox, config)
@@ -168,6 +172,50 @@ class APIEditPage(MessageBoxBase, ConfigMixin, LogMixin, ToastMixin, Base):
             GroupCard(
                 self.tra("接口密钥"),
                 self.tra("请输入接口密钥，例如 sk-d0daba12345678fd8eb7b8d31c123456，多个密钥之间请使用半角逗号（,）分隔"),
+                init = init,
+            )
+        )
+
+    # 订阅登录状态（只读）
+    def add_widget_subscription_status(self, parent, config):
+
+        provider_id = config.get("platforms", {}).get(self.key, {}).get("oauth_provider", "anthropic")
+
+        def status_text() -> str:
+            try:
+                from ModuleFolders.Infrastructure.Auth.CredentialManager import CredentialManager
+                meta = CredentialManager().get_status_meta(provider_id)
+            except Exception as e:  # noqa: BLE001
+                return self.tra("无法读取订阅登录状态") + f"：{e}"
+            if meta.get("logged_in"):
+                import time
+                exp = meta.get("expires_at") or 0
+                when = time.strftime("%Y-%m-%d %H:%M", time.localtime(exp)) if exp else "-"
+                txt = (
+                    f"{self.tra('已登录')}　{meta.get('subscription_type', '') or '-'}　"
+                    f"{self.tra('到期时间')}：{when}"
+                )
+                if meta.get("expiring"):
+                    txt += "　" + self.tra("（即将过期，使用时将自动刷新）")
+                return txt
+            return (
+                self.tra("未检测到登录") + "　"
+                + self.tra("请在订阅管理中登录 Claude 订阅账号")
+            )
+
+        def init(widget):
+            from qfluentwidgets import BodyLabel, PushButton
+            label = BodyLabel(status_text(), self)
+            label.setWordWrap(True)
+            button = PushButton(self.tra("重新检测"), self)
+            button.clicked.connect(lambda: label.setText(status_text()))
+            widget.addWidget(label)
+            widget.addWidget(button)
+
+        parent.addWidget(
+            GroupCard(
+                self.tra("订阅登录状态"),
+                self.tra("使用 AiNiee 内置 OAuth 登录，无需 API Key"),
                 init = init,
             )
         )

@@ -274,7 +274,11 @@ class TaskConfig(ConfigMixin, LogMixin, Base):
 
         # 分割密钥字符串
         api_key = platform_data.get("api_key")
-        if api_key == "":
+        if platform_data.get("auth_method") == "oauth":
+            # OAuth 订阅无 api_key，占位单元素（不参与真实鉴权，令牌运行时注入）
+            self.apikey_list = ["oauth"]
+            self.apikey_index = 0
+        elif api_key == "":
             self.apikey_list = ["no_key_required"]
             self.apikey_index = 0
         else:
@@ -398,5 +402,16 @@ class TaskConfig(ConfigMixin, LogMixin, Base):
             "thinking_budget": platform_data.get("thinking_budget", -1),
             "thinking_level": platform_data.get("thinking_level", "high"),
         }
+
+        # OAuth 订阅：仅标注鉴权方式，令牌不在配置解析期获取。
+        # 改由 AnthropicRequester 在每次请求前即时取有效令牌
+        # （CredentialManager 30s 缓存 + 过期前自动刷新）：
+        #   1) 长任务中令牌过期不再让该轮每个分块各吃一次 401 重试；
+        #   2) 未登录/刷新失败的异常落在请求期被妥善处理，
+        #      不会在配置解析阶段抛出未捕获的 SubscriptionAuthError。
+        # api_key 保留占位（apikey_list=["oauth"]），请求器会用真实令牌覆盖。
+        if platform_data.get("auth_method") == "oauth":
+            params["auth_method"] = "oauth"
+            params["oauth_provider"] = platform_data.get("oauth_provider", "anthropic")
 
         return params

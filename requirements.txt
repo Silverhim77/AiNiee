@@ -2,7 +2,9 @@
 pyinstaller
 openai
 boto3
-anthropic
+# 订阅 OAuth 用到 thinking:{type:adaptive}+output_config.effort 与 auth_token，
+# 旧版 SDK 无这些参数会让 adaptive 模型整批 TypeError，固定已验证的下限版本
+anthropic>=0.102.0
 google-genai
 tiktoken
 numpy

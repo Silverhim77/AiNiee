@@ -41,7 +41,7 @@ class LLMRequester():
                 system_prompt,
                 platform_config,
             )
-        elif target_platform.startswith("anthropic") or (
+        elif target_platform.startswith("anthropic") or target_platform.startswith("claude_subscription") or (
             (target_platform.startswith("custom_platform_") or target_platform.startswith("custom_"))
             and api_format == "Anthropic"
         ):
