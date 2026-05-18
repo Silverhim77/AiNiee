@@ -294,6 +294,12 @@ class TaskConfig(ConfigMixin, LogMixin, Base):
         # 获取接口限额
         self.rpm_limit = platform_data.get("rpm_limit", 4096)
 
+        if platform_data.get("auth_method") == "oauth":
+            # 订阅接口没有稳定的 API-key RPM 语义；用户把 rpm_limit 调太高时，
+            # 自动线程数会被放大，容易触发订阅 5h/7d token 窗口或并发限流。
+            # calculate_thread_count(500) 对应 6 个线程，因此 cap 到 500。
+            self.rpm_limit = min(self.rpm_limit, 500)
+
         # 根据密钥数量给 RPM 限额翻倍
         self.rpm_limit = self.rpm_limit * len(self.apikey_list)
 
@@ -315,6 +321,8 @@ class TaskConfig(ConfigMixin, LogMixin, Base):
             self.target_platform,
             self.rpm_limit,
         )
+        if platform_data.get("auth_method") == "oauth":
+            self.actual_thread_counts = min(self.actual_thread_counts, 6)
 
     # 自动计算实际请求线程数
     def thread_counts_setting(self, user_thread_counts, target_platform, rpm_limit) -> None:

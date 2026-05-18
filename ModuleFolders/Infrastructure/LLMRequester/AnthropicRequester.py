@@ -7,9 +7,9 @@ from ModuleFolders.Infrastructure.Auth.CredentialManager import (
     SubscriptionAuthError,
 )
 
-# 订阅按 token 用量计 5h/7d 滚动窗口配额；翻译分块输出很短，套模型理论上限
-# (如 64000) + high effort 会让单请求开销巨大、极易触顶订阅限流。订阅模式克制此值。
-_OAUTH_MAX_TOKENS = 8192
+# 订阅按 token 用量计 5h/7d 滚动窗口配额；翻译分块输出通常不需要套模型
+# 理论上限 (如 64000)。订阅模式保留较宽输出空间，同时避免单请求开销失控。
+_OAUTH_MAX_TOKENS = 50000
 
 
 # 接口请求器
@@ -152,12 +152,9 @@ class AnthropicRequester(LogMixin, Base):
                     base_params["temperature"] = 1.0
             else:
                 if mode == "adaptive":
-                    # 关思考时 adaptive 模型即便省略 thinking，服务端 effort 仍默认偏高
-                    # （延迟/用量意外）。显式下发低 effort，与 think_depth 解耦；
-                    # 此修复对纯 API key 的新模型同样生效，非仅订阅。
-                    base_params["output_config"] = {"effort": "low"}
+                    # 关思考时不下发 thinking / effort，保持模型默认质量倾向。
                     # adaptive 类模型 temperature 限制不明（订阅接口也不暴露该项），
-                    # OAuth 下保守不发，走默认 1
+                    # OAuth 下保守不发，走默认 1。
                     if not is_oauth:
                         base_params["temperature"] = temperature
                 else:
@@ -184,6 +181,13 @@ class AnthropicRequester(LogMixin, Base):
 
             # 提取回复文本/思考（多 block 收集拼接，避免只留最后一个丢译文）
             response_think, response_content = self._collect_content(response.content)
+            stop_reason = getattr(response, "stop_reason", None)
+            if stop_reason == "max_tokens":
+                self.warning(
+                    "Claude 回复因达到 max_tokens 被截断，当前 max_tokens="
+                    f"{base_params.get('max_tokens')}，本批次后续可能因格式不完整而重试。"
+                    "建议降低单次任务翻译数量，或降低思考强度以避免模型过度思考。"
+                )
 
         except SubscriptionAuthError as e:
             if Base.work_status == Base.STATUS.STOPING:
